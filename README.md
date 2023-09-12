@@ -1,8 +1,14 @@
 # Flash-LLM
-This is the artifact of our paper Flash-LLM, supporting pruned LLM model inference with NVIDIA tensor cores.
-Currently, this repo works for NVIDIA A100 GPUs.
 
-## Preparations
+Flash-LLM is an efficient GPU library for cost-effective and highly-efficient
+large generative model inference. It provides efficient GPU MatMul kernels with
+unstructured sparsity by leveraging Tensor Cores. With Flash-LLM, the pruned LLM
+models can be deployed onto GPUs with less memory consumption and can execute
+efficiently.
+
+Currently, the code has been evaluated on NVIDIA A100 GPUs.
+
+## Build Flash-LLM
 
 #### 1. Prepare the Docker
 Note: please specify PATH_LOCAL and PATH_DOCKER according to your preference.
@@ -15,7 +21,7 @@ sudo docker run -it —gpus all \
 nvcr.io/nvidia/pytorch:22.07-py3 bash
 ```
 
-#### 2. Downloading Code
+#### 2. Submodule Configuration
 
 ```sh
 git clone https://github.com/AlibabaResearch/flash-llm.git
@@ -26,40 +32,16 @@ cd $FlashLLM_HOME/third_party/FasterTransformer && git am ../ft.patch
 cd $FlashLLM_HOME/third_party/sputnik && git am ../sputnik.patch
 ```
 
-#### 3. Building FlashLLM Kernels
+#### 3. Building
 The libSpMM_API.so and SpMM_API.cuh will be available for easy integration after:
 ```sh
 cd $FlashLLM_HOME/build && make -j
 ```
 
-## Kernel Benchmarking
 
-#### 1. Installing Sputnik
-```sh
-cd $FlashLLM_HOME/third_party/sputnik
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TEST=OFF -DBUILD_BENCHMARK=OFF -DCUDA_ARCHS=”80”
-make -j12
-```
+## LLM Inference Example
 
-#### 2. Installing cuSPARSELT
-Following this [link](https://developer.nvidia.com/cusparselt-downloads).
-
-#### 3. Building spmm_test
-```sh
-cd $FlashLLM_HOME/kernel_benchmark
-source test_env
-make
-```
-
-#### 4. Benchmarking
-```sh
-./benchmark.sh 
-```
-
-## End-to-End Inference
-
-#### 1. Building Faster-Transformer (with extended support of FlashLLM)
+#### 1. Building Faster-Transformer with Flash-LLM integration
 ```sh
 cd $FlashLLM_HOME/third_party/FasterTransformer/
 mkdir -p build && cd build
@@ -124,8 +106,31 @@ deepspeed --num_gpus 1 inference-test.py --ds_inference --greedy --use_meta_tens
 ```
 
 
-## Citation
-If you use this codebase, or otherwise found our work valuable, please cite:
+## Kernel Benchmarking
+
+#### 1. Installing Sputnik
+```sh
+cd $FlashLLM_HOME/third_party/sputnik
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TEST=OFF -DBUILD_BENCHMARK=OFF -DCUDA_ARCHS=”80”
+make -j12
 ```
 
+#### 2. Installing cuSPARSELT
+Following this [link](https://developer.nvidia.com/cusparselt-downloads).
+
+#### 3. Building spmm_test
+```sh
+cd $FlashLLM_HOME/kernel_benchmark
+source test_env
+make
 ```
+
+#### 4. Benchmarking
+```sh
+./benchmark.sh 
+```
+
+
+## Citation
+Paper stay tuned.
