@@ -1,0 +1,31 @@
+From fea1ecacb758f80551d6cbd83f486e872880829b Mon Sep 17 00:00:00 2001
+From: Haojun Xia <xhjustc@mail.ustc.edu.cn>
+Date: Sat, 2 Sep 2023 03:19:06 +0000
+Subject: [PATCH] Avoiding cmake errors: cublas_static and cusparse_static is
+ only required by Sputnik Test
+
+---
+ cmake/Dependencies.cmake | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/cmake/Dependencies.cmake b/cmake/Dependencies.cmake
+index 4a8c161..9d9ae4d 100644
+--- a/cmake/Dependencies.cmake
++++ b/cmake/Dependencies.cmake
+@@ -2,9 +2,10 @@ include(cmake/Cuda.cmake)
+ 
+ # TODO(tgale): Move cuSPARSE, cuBLAS deps to test & benchmark only.
+ cuda_find_library(CUDART_LIBRARY cudart_static)
+-cuda_find_library(CUBLAS_LIBRARY cublas_static)
+-cuda_find_library(CUSPARSE_LIBRARY cusparse_static)
+-list(APPEND SPUTNIK_LIBS "cudart_static;cublas_static;cusparse_static;culibos;cublasLt_static")
++#cuda_find_library(CUBLAS_LIBRARY cublas_static)
++#cuda_find_library(CUSPARSE_LIBRARY cusparse_static)
++#list(APPEND SPUTNIK_LIBS "cudart_static;cublas_static;cusparse_static;culibos;cublasLt_static")
++list(APPEND SPUTNIK_LIBS "cudart_static;culibos")
+ 
+ # Google Glog.
+ find_package(Glog REQUIRED)
+-- 
+2.25.1
+
