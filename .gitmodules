@@ -1,0 +1,6 @@
+[submodule "third_party/sputnik"]
+	path = third_party/sputnik
+	url = https://github.com/google-research/sputnik.git
+[submodule "third_party/FasterTransformer"]
+	path = third_party/FasterTransformer
+	url = https://github.com/NVIDIA/FasterTransformer.git

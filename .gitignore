@@ -1,0 +1,4 @@
+*ncu
+*.so
+*.o
+*.ncu-rep
