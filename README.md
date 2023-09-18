@@ -1,136 +1,54 @@
 # Flash-LLM
+Flash-LLM is a large language model (LLM) inference acceleration library for unstructured model pruning. Flash-LLM mainly contains efficient GPU code based on Tensor-core-accelerated unstructured sparse matrix multiplication calculations, which can effectively accelerate the performance of common matrix calculations in LLM. With Flash-LLM, the pruned LLM models can be deployed onto GPUs with less memory consumption and can be execute more efficiently. Currently, the code has been evaluated on NVIDIA A100 GPUs.
 
-Flash-LLM is an efficient GPU library for cost-effective and highly-efficient
-large generative model inference. It provides efficient GPU MatMul kernels with
-unstructured sparsity by leveraging Tensor Cores. With Flash-LLM, the pruned LLM
-models can be deployed onto GPUs with less memory consumption and can execute
-efficiently.
+We observe that LLM inference performance/memory_usage is heavily bounded by four types of **Skinny MatMuls** shown in the left figure. 
+To optimze these MatMuls, we build Flash-LLM based on the key strategy called **"Load-as-Sparse and Compute-as-Dense" (LSCD)**.
 
-Currently, the code has been evaluated on NVIDIA A100 GPUs.
+<p align="center">
+  <picture>
+  <img src="docs/assets/MatMulsInLLMs.png" width="40%">
+  </picture>
+  <picture>
+  <img src="docs/assets/ExistingSpMM.png" width="45%">
+  </picture>
+</p>
 
-## Build Flash-LLM
+## Getting Started
+Visit our [documentation](docs) to get started.
+* [Preparations](docs/1_Preparations.md)
+* [KernelBenchmarking](docs/2_KernelBenchmarking.md)
+* [LLMInferenceExample](docs/3_LLMInferenceExample.md)
 
-#### 1. Prepare the Docker
-Note: please specify PATH_LOCAL and PATH_DOCKER according to your preference.
+## Performance
+Flash-LLM shows superior performance in both single SpMM kernel and end-to-end LLM inference.
+Figure below shows the kernel-level performance comparisons among Flash-LLM and state-of-the-art solutions.
+Flash-LLM outperforms Sputnik/SparTA by **3.6x**/**1.4x**, **3.0x**/**1.4x**, and **2.0x**/**1.6x** under 70%, 80%, and 90% sparsity respectively. 
+Besides, Flash-LLM can also outperform the state-of-the-art dense kernels cuBLAS with tensor core enabled by **1.4x**, **1.7x**, and **2.1x**.
 
-```sh
-sudo docker run -it —gpus all \
-—name FlashLLM \
-—privileged \
--v LOCAL_PATH:DOCKER_PATH \
-nvcr.io/nvidia/pytorch:22.07-py3 bash
-```
+![KernelBenchmarking](docs/assets/KernelBenchmarking.png)
 
-#### 2. Submodule Configuration
+The figures on the **left** shows the performance of Flash-LLM, FasterTransformer and DeepSpeed respectively on the **OPT-66B** models. 
+First of all, Flash-LLM can often support larger batch sizes because it requires less storage resources; secondly, Flash-LLM has significantly higher token generation efficiency than FasterTransformer and DeepSpeed; finally , Flash-LLM often requires fewer GPUs to execute the same LLM model.
 
-```sh
-git clone https://github.com/AlibabaResearch/flash-llm.git
-cd Flash-LLM
-git submodule update --init --recursive
-source Init_FlashLLM.sh
-cd $FlashLLM_HOME/third_party/FasterTransformer && git am ../ft.patch
-cd $FlashLLM_HOME/third_party/sputnik && git am ../sputnik.patch
-```
+The figures on the **right** presents the performance of Flash-LLM, FasterTransformer respectively on the **OPT-175B** models and the memory breakdown for the inference.
+On the one hand, Flash-LLM's matrix calculation is more efficient; on the other hand, because Flash-LLM requires fewer GPUs, its communication cost is lower.
 
-#### 3. Building
-The libSpMM_API.so and SpMM_API.cuh will be available for easy integration after:
-```sh
-cd $FlashLLM_HOME/build && make -j
-```
-
-
-## LLM Inference Example
-
-#### 1. Building Faster-Transformer with Flash-LLM integration
-```sh
-cd $FlashLLM_HOME/third_party/FasterTransformer/
-mkdir -p build && cd build
-pip install -r ../examples/pytorch/gpt/requirement.txt
-cmake -DSM=80 -DCMAKE_BUILD_TYPE=Release -DBUILD_MULTI_GPU=ON -DFLASH_LLM=ON ..
-make -j
-```
-Note: if you want run standard Faster-Transformer (cuBLAS will be used for all MatMuls), use the following cmake command instead:
-```sh
-cmake -DSM=80 -DCMAKE_BUILD_TYPE=Release -DBUILD_MULTI_GPU=ON -DFLASH_LLM=OFF ..
-make -j
-```
-
-#### 2. Downloading & Converting OPT models
-
-Downloading the OPT model checkpoint (taking OPT-30B as an example) :
-```sh
-cd $FlashLLM_HOME/end2end_inference/models
-git clone https://huggingface.co/facebook/opt-30b && opt-30b
-apt install git-lfs
-git lfs pull --include="pytorch_model*"
-```
-Converting from PyTorch format to Faster-Transformer format, here **-i_g** means the number of GPUs you will use for inference while -p means the number of CPU threads you use for this model format transformation. This script will load pytorch model from -i PATH and output the generated model to -o PATH.
-```sh
-cd $FlashLLM_HOME/end2end_inference/ft_tools
-python huggingface_opt_convert_Phase1.py \
-      -i $FlashLLM_HOME/end2end_inference/models/opt-30b \
-      -o $FlashLLM_HOME/end2end_inference/models/opt-30b/c-model \
-      -i_g 1 \
-      -weight_data_type fp16 \
-      -p 64
-```
-
-Converting from Faster-Transformer format to Flash-LLM format. Note that here **-i_g** means the number of GPUs you will use for inference. We fake 80% sparsity in this script for demonstration purpose, which can be disabled if you already have your OPT models pruned. Besides, hand-tuned SplitK is used for different input shapes.
-```sh
-python huggingface_opt_convert_Phase2.py \
-      -m $FlashLLM_HOME/end2end_inference/models/opt-30b/c-model \
-      -l $FlashLLM_HOME/build/libSpMM_API.so \
-      -i_g 1 \
-      -p 64
-```
-
-#### 3. Configuration
-First, you need to modify the config file for the inference task in path:
-*$FlashLLM_HOME/third_party/FasterTransformer/examples/cpp/multi_gpu_gpt/gpt_config.ini*
-The most important thing is to change the model_dir according to your absolute file path.
-The model_name should also be changed if you are running other OPT models.
-Besides, the tensor_para_size should be the same as the **-i_g** you used in step 2.
-
-#### 4. Running Inference
-Note that **-n** here means the number of GPUs you use for inference, which should be the same as **-ig** in step 2.
-```sh
-cd $FlashLLM_HOME/third_party/FasterTransformer/build
-mpirun -n 1 --allow-run-as-root ./bin/multi_gpu_gpt_example
-```
-
-#### 5. DeepSpeed baseline
-```sh
-cd $FlashLLM_HOME/end2end_inference/ds_scripts
-pip install -r requirements.txt
-deepspeed --num_gpus 1 inference-test.py --ds_inference --greedy --use_meta_tensor --use_kernel --name facebook/opt-30b --batch_size 8 --max_new_tokens 512 --max_tokens 576
-```
-
-
-## Kernel Benchmarking
-
-#### 1. Installing Sputnik
-```sh
-cd $FlashLLM_HOME/third_party/sputnik
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TEST=OFF -DBUILD_BENCHMARK=OFF -DCUDA_ARCHS=”80”
-make -j12
-```
-
-#### 2. Installing cuSPARSELT
-Following this [link](https://developer.nvidia.com/cusparselt-downloads).
-
-#### 3. Building spmm_test
-```sh
-cd $FlashLLM_HOME/kernel_benchmark
-source test_env
-make
-```
-
-#### 4. Benchmarking
-```sh
-./benchmark.sh 
-```
-
-
+<p align="center">
+  <picture>
+  <img src="docs/assets/Inference_OPT_66B.png" width="45%">
+  </picture>
+  <picture>
+  <img src="docs/assets/Inference_OPT_175B.png" width="50%">
+  </picture>
+</p>
+ 
 ## Citation
-Paper stay tuned.
+If you use this codebase, or otherwise found our work valuable, please cite:
+```bibtex
+@inproceedings{flashllm2024,
+  title={Flash-LLM: Enabling Cost-Effective and Highly-Efficient Large Generative Model Inference with Unstructured Sparsity}, 
+  author={Haojun Xia and Zhen Zheng and Yuchao Li and Donglin Zhuang and Zhongzhu Zhou and Xiafei Qiu and Yong Li and Wei Lin and Shuaiwen Leon Song},
+  booktitle={Proceedings of the VLDB Endowment 17},
+  year={2024}
+}
+```
