@@ -25,6 +25,8 @@ The figure below shows the kernel-level performance comparisons among Flash-LLM 
 Flash-LLM outperforms Sputnik/SparTA by **3.6x**/**1.4x**, **3.0x**/**1.4x**, and **2.0x**/**1.6x** under 70%, 80%, and 90% sparsity respectively. 
 Besides, Flash-LLM can also outperform the state-of-the-art dense kernels cuBLAS with Tensor Core enabled by **1.4x**, **1.7x**, and **2.1x**.
 
+![KernelBenchmarking](docs/assets/KernelBenchmarking.png)
+
 The figure below on the **left** shows the performance of Flash-LLM, FasterTransformer, and DeepSpeed respectively on the **OPT-66B** models. 
 First of all, Flash-LLM can support larger batch sizes because it requires less storage resources; secondly, Flash-LLM has significantly higher token generation efficiency than FasterTransformer and DeepSpeed; finally, Flash-LLM often requires fewer GPUs to execute the same LLM model.
 
