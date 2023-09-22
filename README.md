@@ -41,14 +41,23 @@ On the one hand, Flash-LLM's matrix calculation is more efficient; on the other 
   <img src="docs/assets/Inference_OPT_175B.png" width="50%">
   </picture>
 </p>
- 
+
+## Publication
+Flash-LLM is a collaborated research project between Alibaba Group and [FSA-Lab@USYD](https://www.fsa-lab.org/), which is recently accepted by VLDB 2024:
+
+Haojun Xia*, University of Sydney; Zhen Zheng*, Yuchao Li, Alibaba Group; Donglin Zhuang, Zhongzhu Zhou, University of Sydney; Xiafei Qiu, Yong Li, Wei Lin, Alibaba Group; Shuaiwen Leon Song, University of Sydney. *Flash-LLM: Enabling Cost-Effective and Highly-Efficient Large Generative Model Inference with Unstructured Sparsity. VLDB2024.*
+
+You can find the pre-print online using this [link](https://arxiv.org/abs/2309.10285).
+
 ## Citation
 If you use this codebase or otherwise found our work valuable, please cite:
 ```bibtex
-@inproceedings{flashllm2024,
-  title={Flash-LLM: Enabling Cost-Effective and Highly-Efficient Large Generative Model Inference with Unstructured Sparsity}, 
-  author={Haojun Xia and Zhen Zheng and Yuchao Li and Donglin Zhuang and Zhongzhu Zhou and Xiafei Qiu and Yong Li and Wei Lin and Shuaiwen Leon Song},
-  booktitle={Proceedings of the VLDB Endowment 17},
-  year={2024}
+@misc{xia2023flashllm,
+      title={Flash-LLM: Enabling Cost-Effective and Highly-Efficient Large Generative Model Inference with Unstructured Sparsity}, 
+      author={Haojun Xia and Zhen Zheng and Yuchao Li and Donglin Zhuang and Zhongzhu Zhou and Xiafei Qiu and Yong Li and Wei Lin and Shuaiwen Leon Song},
+      year={2023},
+      eprint={2309.10285},
+      archivePrefix={arXiv},
+      primaryClass={cs.DC}
 }
 ```
