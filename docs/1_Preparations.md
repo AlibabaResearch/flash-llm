@@ -7,7 +7,7 @@ Note: please specify PATH_LOCAL and PATH_DOCKER according to your preference.
 sudo docker run -it —gpus all \
 —name FlashLLM \
 —privileged \
--v LOCAL_PATH:DOCKER_PATH \
+-v $LOCAL_PATH:$DOCKER_PATH \
 nvcr.io/nvidia/pytorch:22.07-py3 bash
 ```
 
